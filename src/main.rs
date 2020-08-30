@@ -14,6 +14,7 @@ use winapi::{
 };
 use std::ptr;
 use std::mem;
+use winapi::um::winuser::CW_USEDEFAULT;
 
 fn main() {
     unsafe {
@@ -60,7 +61,7 @@ unsafe fn create_window(class_name: &[u16]) -> HWND {
         class_name.as_ptr(), //lpClassName: LPCWSTR
         encode("Hello, World!").as_ptr(), //lpWindowName: LPCWSTR
         WS_OVERLAPPEDWINDOW, //dwStyle: DWORD
-        0, 0, 200, 200, //X: int, Y: int, nWidth: int, nHeight: int
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, //X: int, Y: int, nWidth: int, nHeight: int
         ptr::null_mut(), //hWndParent: HWND
         ptr::null_mut(), //hMenu: HMENU
         ptr::null_mut(), //hInstance: HINSTANCE
