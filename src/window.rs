@@ -11,7 +11,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub unsafe fn create(class_name: &[u16], window_name: &[u16]) -> Window {
+    pub unsafe fn create(class_name: &[u16], window_name: &[u16]) -> Result<Window, String> {
         let hwnd = CreateWindowExW(
             0,
             class_name.as_ptr(),
@@ -26,7 +26,10 @@ impl Window {
             ptr::null_mut(),
             ptr::null_mut(),
         );
-        Window { hwnd }
+        if hwnd.is_null() {
+            return Err("CreateWindowExW return null".to_owned());
+        }
+        Ok(Window { hwnd })
     }
     pub unsafe fn show(&self, n_cmd_show: c_int) -> BOOL {
         ShowWindow(self.hwnd, n_cmd_show)

@@ -23,11 +23,18 @@ use winapi::{
 fn main() {
     unsafe {
         let class_name = encode("my_window_class_name");
+        let window_name = encode("Hello, World!");
         if !register_wndclass(&class_name) {
             return;
         }
 
-        let window = Window::create(&class_name, &encode("Hello, World!"));
+        let window = match Window::create(&class_name, &window_name) {
+            Ok(result) => result,
+            Err(message) => {
+                println!("{}", message);
+                return;
+            }
+        };
         window.show(SW_NORMAL);
         window.update();
         let mut msg = mem::uninitialized::<MSG>();
