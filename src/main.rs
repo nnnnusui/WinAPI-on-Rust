@@ -1,3 +1,6 @@
+extern crate WinApp;
+use WinApp::window::Window;
+
 use std::mem;
 use std::ptr;
 use winapi::um::winuser::CW_USEDEFAULT;
@@ -24,12 +27,9 @@ fn main() {
             return;
         }
 
-        let hwnd = create_window(&class_name);
-        if hwnd.is_null() {
-            return;
-        }
-        ShowWindow(hwnd, SW_NORMAL);
-        UpdateWindow(hwnd);
+        let window = Window::create(&class_name, &encode("Hello, World!"));
+        window.show(SW_NORMAL);
+        window.update();
         let mut msg = mem::uninitialized::<MSG>();
         loop {
             if GetMessageW(&mut msg, ptr::null_mut(), 0, 0) == 0 {
@@ -55,23 +55,6 @@ unsafe fn register_wndclass(class_name: &[u16]) -> bool {
     winc.lpszClassName = class_name.as_ptr();
 
     RegisterClassW(&winc) > 0
-}
-
-unsafe fn create_window(class_name: &[u16]) -> HWND {
-    CreateWindowExW(
-        0,
-        class_name.as_ptr(),
-        encode("Hello, World!").as_ptr(),
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        ptr::null_mut(),
-        ptr::null_mut(),
-        ptr::null_mut(),
-        ptr::null_mut(),
-    )
 }
 
 unsafe extern "system" fn win_proc(
