@@ -1,20 +1,21 @@
+use std::mem;
+use std::ptr;
+use winapi::um::winuser::CW_USEDEFAULT;
 use winapi::{
-    um::{
-        winuser::{RegisterClassW, WNDCLASSW, CS_HREDRAW, CS_VREDRAW,
-                  LoadIconW, IDI_APPLICATION, LoadCursorW, IDC_ARROW,
-                  CreateWindowExW, ShowWindow, SW_NORMAL, UpdateWindow,
-                  GetMessageW, TranslateMessage, DispatchMessageW, MSG,
-                  WM_DESTROY, PostQuitMessage, DefWindowProcW, WS_OVERLAPPEDWINDOW},
-        wingdi::{GetStockObject, WHITE_BRUSH},
-    },
     shared::{
-        windef::{HWND, HBRUSH},
-        minwindef::{UINT, WPARAM, LPARAM, LRESULT},
+        minwindef::{LPARAM, LRESULT, UINT, WPARAM},
+        windef::{HBRUSH, HWND},
+    },
+    um::{
+        wingdi::{GetStockObject, WHITE_BRUSH},
+        winuser::{
+            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, LoadCursorW, LoadIconW,
+            PostQuitMessage, RegisterClassW, ShowWindow, TranslateMessage, UpdateWindow,
+            CS_HREDRAW, CS_VREDRAW, IDC_ARROW, IDI_APPLICATION, MSG, SW_NORMAL, WM_DESTROY,
+            WNDCLASSW, WS_OVERLAPPEDWINDOW,
+        },
     },
 };
-use std::ptr;
-use std::mem;
-use winapi::um::winuser::CW_USEDEFAULT;
 
 fn main() {
     unsafe {
@@ -55,20 +56,30 @@ unsafe fn register_wndclass(class_name: &[u16]) -> bool {
 
     RegisterClassW(&winc) > 0
 }
+
 unsafe fn create_window(class_name: &[u16]) -> HWND {
     CreateWindowExW(
-        0, //dwExStyle: DWORD
-        class_name.as_ptr(), //lpClassName: LPCWSTR
-        encode("Hello, World!").as_ptr(), //lpWindowName: LPCWSTR
-        WS_OVERLAPPEDWINDOW, //dwStyle: DWORD
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, //X: int, Y: int, nWidth: int, nHeight: int
-        ptr::null_mut(), //hWndParent: HWND
-        ptr::null_mut(), //hMenu: HMENU
-        ptr::null_mut(), //hInstance: HINSTANCE
-        ptr::null_mut(), //lpParam: LPVOID
+        0,
+        class_name.as_ptr(),
+        encode("Hello, World!").as_ptr(),
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        ptr::null_mut(),
+        ptr::null_mut(),
+        ptr::null_mut(),
+        ptr::null_mut(),
     )
 }
-unsafe extern "system" fn win_proc(hwnd: HWND, msg: UINT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+
+unsafe extern "system" fn win_proc(
+    hwnd: HWND,
+    msg: UINT,
+    w_param: WPARAM,
+    l_param: LPARAM,
+) -> LRESULT {
     match msg {
         WM_DESTROY => PostQuitMessage(0),
         _ => return DefWindowProcW(hwnd, msg, w_param, l_param),
