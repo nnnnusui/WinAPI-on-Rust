@@ -1,4 +1,5 @@
-use std::ptr;
+use std::error::Error;
+use std::{error, fmt, ptr};
 use winapi::um::winuser::{CreateWindowExW, CW_USEDEFAULT, WS_OVERLAPPEDWINDOW};
 use winapi::{
     ctypes::c_int,
@@ -11,7 +12,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub unsafe fn create(class_name: &[u16], window_name: &[u16]) -> Result<Window, String> {
+    pub unsafe fn create(class_name: &[u16], window_name: &[u16]) -> Result<Window, WindowError> {
         let hwnd = CreateWindowExW(
             0,
             class_name.as_ptr(),
@@ -27,7 +28,7 @@ impl Window {
             ptr::null_mut(),
         );
         if hwnd.is_null() {
-            return Err("CreateWindowExW return null".to_owned());
+            return Err(WindowError::CreateWindowError);
         }
         Ok(Window { hwnd })
     }
@@ -36,5 +37,25 @@ impl Window {
     }
     pub unsafe fn update(&self) -> BOOL {
         UpdateWindow(self.hwnd)
+    }
+}
+
+#[derive(Debug)]
+pub enum WindowError {
+    CreateWindowError,
+}
+impl fmt::Display for WindowError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            WindowError::CreateWindowError => write!(f, "CreateWindow returned null"),
+        }
+    }
+}
+
+impl error::Error for WindowError {
+    fn cause(&self) -> Option<&dyn error::Error> {
+        match *self {
+            WindowError::CreateWindowError => None,
+        }
     }
 }
