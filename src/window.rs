@@ -1,10 +1,18 @@
-use std::error::Error;
-use std::{error, fmt, ptr};
-use winapi::um::winuser::{CreateWindowExW, CW_USEDEFAULT, WS_OVERLAPPEDWINDOW};
+use std::{error, fmt, mem, ptr};
 use winapi::{
     ctypes::c_int,
-    shared::{minwindef::BOOL, windef::HWND},
-    um::winuser::{ShowWindow, UpdateWindow},
+    shared::{
+        minwindef::{BOOL, LPARAM, LRESULT, UINT, WPARAM},
+        windef::{HBRUSH, HWND},
+    },
+    um::{
+        wingdi::{GetStockObject, WHITE_BRUSH},
+        winuser::{
+            CreateWindowExW, DefWindowProcW, LoadCursorW, LoadIconW, PostQuitMessage,
+            RegisterClassW, ShowWindow, UpdateWindow, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT,
+            IDC_ARROW, IDI_APPLICATION, WM_DESTROY, WNDCLASSW, WS_OVERLAPPEDWINDOW,
+        },
+    },
 };
 
 pub struct Window {
@@ -12,7 +20,34 @@ pub struct Window {
 }
 
 impl Window {
+    unsafe fn register_wndclass(class_name: &[u16]) -> bool {
+        let mut winc = mem::zeroed::<WNDCLASSW>();
+        winc.style = CS_HREDRAW | CS_VREDRAW;
+        winc.lpfnWndProc = Some(Window::win_proc);
+        winc.hIcon = LoadIconW(ptr::null_mut(), IDI_APPLICATION);
+        winc.hCursor = LoadCursorW(ptr::null_mut(), IDC_ARROW);
+        winc.hbrBackground = GetStockObject(WHITE_BRUSH as i32) as HBRUSH;
+        winc.lpszClassName = class_name.as_ptr();
+
+        RegisterClassW(&winc) > 0
+    }
+    unsafe extern "system" fn win_proc(
+        hwnd: HWND,
+        msg: UINT,
+        w_param: WPARAM,
+        l_param: LPARAM,
+    ) -> LRESULT {
+        match msg {
+            WM_DESTROY => PostQuitMessage(0),
+            _ => return DefWindowProcW(hwnd, msg, w_param, l_param),
+        };
+        0
+    }
+
     pub unsafe fn create(class_name: &[u16], window_name: &[u16]) -> Result<Window, WindowError> {
+        if !Window::register_wndclass(&class_name) {
+            return Err(WindowError::RegisterClassFailed);
+        }
         let hwnd = CreateWindowExW(
             0,
             class_name.as_ptr(),
@@ -28,7 +63,7 @@ impl Window {
             ptr::null_mut(),
         );
         if hwnd.is_null() {
-            return Err(WindowError::CreateWindowError);
+            return Err(WindowError::CreateWindowFailed);
         }
         Ok(Window { hwnd })
     }
@@ -42,12 +77,14 @@ impl Window {
 
 #[derive(Debug)]
 pub enum WindowError {
-    CreateWindowError,
+    CreateWindowFailed,
+    RegisterClassFailed,
 }
 impl fmt::Display for WindowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            WindowError::CreateWindowError => write!(f, "CreateWindow returned null"),
+            WindowError::CreateWindowFailed => write!(f, "CreateWindow returned null"),
+            WindowError::RegisterClassFailed => write!(f, "RegisterClass returned error"),
         }
     }
 }
@@ -55,7 +92,8 @@ impl fmt::Display for WindowError {
 impl error::Error for WindowError {
     fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
-            WindowError::CreateWindowError => None,
+            WindowError::CreateWindowFailed => None,
+            WindowError::RegisterClassFailed => None,
         }
     }
 }
