@@ -1,4 +1,5 @@
 use std::{error, fmt, mem, ptr};
+use winapi::um::winuser::{DispatchMessageW, GetMessageW, TranslateMessage, MSG};
 use winapi::{
     ctypes::c_int,
     shared::{
@@ -17,6 +18,7 @@ use winapi::{
 
 pub struct Window {
     pub hwnd: HWND,
+    msg: mem::MaybeUninit<MSG>,
 }
 
 impl Window {
@@ -65,13 +67,23 @@ impl Window {
         if hwnd.is_null() {
             return Err(WindowError::CreateWindowFailed);
         }
-        Ok(Window { hwnd })
+        let msg = mem::MaybeUninit::<MSG>::uninit();
+        Ok(Window { hwnd, msg })
     }
     pub unsafe fn show(&self, n_cmd_show: c_int) -> BOOL {
         ShowWindow(self.hwnd, n_cmd_show)
     }
     pub unsafe fn update(&self) -> BOOL {
         UpdateWindow(self.hwnd)
+    }
+    pub unsafe fn frame(&self) -> bool {
+        let mut msg = self.msg.assume_init();
+        if GetMessageW(&mut msg, ptr::null_mut(), 0, 0) == 0 {
+            return false;
+        }
+        TranslateMessage(&mut msg);
+        DispatchMessageW(&mut msg);
+        true
     }
 }
 
