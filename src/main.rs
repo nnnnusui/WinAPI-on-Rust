@@ -1,30 +1,39 @@
-extern crate winapp;
-use winapp::window::Window;
-
 use std::mem;
 use std::ptr;
-use winapi::um::winuser::SW_NORMAL;
+use winapi::{
+    shared::{
+        minwindef::{BOOL, LPARAM, TRUE},
+        windef::HWND,
+    },
+    um::winuser::{EnumWindows, GetWindowTextW},
+};
 
 fn main() {
-    unsafe { show_window() }
-}
-
-unsafe fn show_window() {
-    let class_name = encode("my_window_class_name");
-    let window_name = encode("Hello, World!");
-
-    let window = match Window::create(&class_name, &window_name) {
-        Ok(result) => result,
-        Err(message) => {
-            println!("{}", message);
-            return;
+    for window in enumerate_windows() {
+        use std::ffi::OsString;
+        use std::os::windows::ffi::OsStringExt;
+        let mut buf = [0u16; 1024];
+        let success = unsafe { GetWindowTextW(window, &mut buf[0], 1024) > 0 };
+        if success {
+            if let Some(name) = OsString::from_wide(&buf[..]).to_str() {
+                println!("{}", name)
+            }
         }
-    };
-    window.show(SW_NORMAL);
-    window.update();
-    while window.frame() {}
+    }
 }
 
-fn encode(source: &str) -> Vec<u16> {
-    source.encode_utf16().chain(Some(0)).collect()
+fn enumerate_windows() -> Vec<HWND> {
+    let mut windows = Vec::<HWND>::new();
+    let userdata = &mut windows as *mut _;
+    let result = unsafe { EnumWindows(Some(enumerate_windows_callback), userdata as LPARAM) };
+
+    windows
+}
+
+unsafe extern "system" fn enumerate_windows_callback(hwnd: HWND, userdata: LPARAM) -> BOOL {
+    // Get the userdata where we will store the result
+    let windows: &mut Vec<HWND> = mem::transmute(userdata);
+    windows.push(hwnd);
+
+    TRUE
 }
