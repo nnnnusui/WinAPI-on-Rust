@@ -1,5 +1,5 @@
-extern crate WinApp;
-use WinApp::window::Window;
+extern crate winapp;
+use winapp::window::Window;
 
 use std::mem;
 use std::ptr;
